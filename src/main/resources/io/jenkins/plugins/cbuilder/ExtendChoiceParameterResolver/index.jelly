@@ -38,7 +38,7 @@
 				      </j:if>
 				      <j:if test="${type eq 'PT_MULTI_SELECT'}">
 				        <select name="value" multiple="multiple" size="${it.visibleItemCount}">
-				          <st:include page="selectContent2.jelly"/>
+				          <st:include page="selectContent.jelly"/>
 				        </select>
 				      </j:if>
 				      <j:if test="${type eq 'PT_RADIO'}">
