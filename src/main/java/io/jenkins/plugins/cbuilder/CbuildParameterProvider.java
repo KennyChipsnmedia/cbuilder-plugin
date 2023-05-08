@@ -22,8 +22,16 @@ public class CbuildParameterProvider extends RebuildParameterProvider {
     @Override
     public RebuildParameterPage getRebuildPage(ParameterDefinition definition, ParameterValue value) {
 
-        List<String> valueList = Arrays.stream(value.getValue().toString().split(",")).collect(Collectors.toList());
+        if(definition == null || value == null) {
+            return null;
+        }
 
+        if(value.getValue() == null) {
+            LOGGER.log(Level.INFO, "Kenny ParameterValue name:" + value.getName() + " value:" + value.getValue());
+            return null;
+        }
+
+        List<String> valueList = Arrays.stream(value.getValue().toString().split(",")).collect(Collectors.toList());
 
         if(definition instanceof ExtendedChoiceParameterDefinition) {
 
@@ -91,6 +99,7 @@ public class CbuildParameterProvider extends RebuildParameterProvider {
 
             return new RebuildParameterPage(definition.getClass(), definition.getDescriptor().getValuePage(), definition);
         }
+
         else {
             return null;
         }
