@@ -7,6 +7,7 @@ import hudson.Extension;
 import hudson.model.ChoiceParameterDefinition;
 import hudson.model.ParameterDefinition;
 import hudson.model.ParameterValue;
+import io.jenkins.plugins.changer.parameter.DownstreamPriorityDefinition;
 import org.biouno.unochoice.*;
 import org.biouno.unochoice.util.Utils;
 
@@ -98,6 +99,11 @@ public class CbuildParameterProvider extends RebuildParameterProvider {
             });
 
             return new RebuildParameterPage(definition.getClass(), definition.getDescriptor().getValuePage(), definition);
+        }
+        else if(definition instanceof DownstreamPriorityDefinition) {
+            ParameterDefinition cpd = definition.copyWithDefaultValue(value);
+            String page = cpd.getDescriptor().getValuePage();
+            return new RebuildParameterPage(definition.getClass(), page, cpd);
         }
 
         else {
