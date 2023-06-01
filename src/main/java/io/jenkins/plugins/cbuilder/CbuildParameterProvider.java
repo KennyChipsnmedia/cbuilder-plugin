@@ -8,9 +8,15 @@ import hudson.model.ChoiceParameterDefinition;
 import hudson.model.ParameterDefinition;
 import hudson.model.ParameterValue;
 import io.jenkins.plugins.changer.parameter.DownstreamPriorityDefinition;
+import jenkins.model.Jenkins;
+import org.apache.tools.ant.filters.StringInputStream;
 import org.biouno.unochoice.*;
 import org.biouno.unochoice.util.Utils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
+import java.io.StringReader;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -70,11 +76,55 @@ public class CbuildParameterProvider extends RebuildParameterProvider {
             }
             */
 
-            // getChoicesToRebuild is made to rebuild parameter setRebulid(false) will be done at active choice parameter class or index.jelly
+
+            // getChoicesToRebuild is made to rebuild parameter, setRebulid(false) will be done at active choice parameter class or index.jelly
             Map<Object, Object> choices = ((AbstractScriptableParameter) definition).getChoicesToRebuild();
             Map<Object, Object> freshChoices = new LinkedHashMap<Object, Object>();
             Map<Object, Object> newChoices = new LinkedHashMap<Object, Object>();
 
+            // special case for textarea in DynamicReferenceParameter
+            if (definition instanceof DynamicReferenceParameter) {
+                LOGGER.log(Level.INFO, "DynamicReferenceParameter inspect choices");
+                choices.entrySet().forEach(it -> {
+                    LOGGER.log(Level.FINEST,"kkk:" + it.getKey() + " vvv:" + it.getValue());
+                });
+
+                LOGGER.log(Level.FINEST, "DynamicReferenceParameter inspect values");
+                valueList.forEach(it -> {
+                    LOGGER.log(Level.FINEST, "value:" + it);
+                });
+
+                DynamicReferenceParameter d2 = (DynamicReferenceParameter)definition;
+                String choicesAsStringForUI = d2.getChoicesAsStringForUI();
+                String choicesAsString = d2.getChoicesAsString();
+                String choiceType = d2.getChoiceType();
+
+                LOGGER.log(Level.FINEST, "choicesAsStringForUI:{0} choicesAsString:{1} choiceType:{2}", new Object[]{choicesAsStringForUI, choicesAsString, choiceType});
+
+                if(choiceType.equals("ET_FORMATTED_HTML")) {
+                    if(valueList.size() > 0) {
+                        StringInputStream si = new StringInputStream(choicesAsString);
+                        StringReader sr = new StringReader(choicesAsString);
+                        try {
+                            Document doc = Jsoup.parse(choicesAsString);
+                            Element textarea = doc.selectFirst("textarea");
+                            if(textarea != null) {
+                                textarea.text(valueList.get(0));
+                                String updated = textarea.outerHtml();
+                                choices.clear();
+                                choices.put(definition.getName(), updated);
+                                return new RebuildParameterPage(definition.getClass(), definition.getDescriptor().getValuePage(), definition);
+                            }
+                        }
+                        catch (Exception e) {
+                            LOGGER.log(Level.SEVERE, "Parse Error", e);
+                            return null;
+                        }
+                    }
+                }
+            }
+
+            // normal choices
             choices.entrySet().forEach(entry -> {
                 String nk = Utils.escapeSelectedAndDisabled(entry.getKey());
                 String nv = Utils.escapeSelectedAndDisabled(entry.getValue());
