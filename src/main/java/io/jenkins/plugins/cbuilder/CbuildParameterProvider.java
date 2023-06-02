@@ -12,9 +12,6 @@ import jenkins.model.Jenkins;
 import org.apache.tools.ant.filters.StringInputStream;
 import org.biouno.unochoice.*;
 import org.biouno.unochoice.util.Utils;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 
 import java.io.StringReader;
 import java.util.*;
@@ -84,43 +81,25 @@ public class CbuildParameterProvider extends RebuildParameterProvider {
 
             // special case for textarea in DynamicReferenceParameter
             if (definition instanceof DynamicReferenceParameter) {
-                LOGGER.log(Level.INFO, "DynamicReferenceParameter inspect choices");
-                choices.entrySet().forEach(it -> {
-                    LOGGER.log(Level.FINEST,"kkk:" + it.getKey() + " vvv:" + it.getValue());
-                });
 
-                LOGGER.log(Level.FINEST, "DynamicReferenceParameter inspect values");
+                // for debug
                 valueList.forEach(it -> {
-                    LOGGER.log(Level.FINEST, "value:" + it);
+                    LOGGER.log(Level.FINEST, "DynamicReferenceParameter value:" + it);
                 });
 
                 DynamicReferenceParameter d2 = (DynamicReferenceParameter)definition;
-                String choicesAsStringForUI = d2.getChoicesAsStringForUI();
                 String choicesAsString = d2.getChoicesAsString();
                 String choiceType = d2.getChoiceType();
+                LOGGER.log(Level.FINEST, "choicesAsString:{0} choiceType:{1}", new Object[]{choicesAsString, choiceType});
 
-                LOGGER.log(Level.FINEST, "choicesAsStringForUI:{0} choicesAsString:{1} choiceType:{2}", new Object[]{choicesAsStringForUI, choicesAsString, choiceType});
-
+                // now only dealing with ET_FORMATTED_HTML format
                 if(choiceType.equals("ET_FORMATTED_HTML")) {
+                    LOGGER.log(Level.FINEST, "DynamicReferenceParameter choiceType ET_FORMATTED_HTML found");
+                    choices.clear();
                     if(valueList.size() > 0) {
-                        StringInputStream si = new StringInputStream(choicesAsString);
-                        StringReader sr = new StringReader(choicesAsString);
-                        try {
-                            Document doc = Jsoup.parse(choicesAsString);
-                            Element textarea = doc.selectFirst("textarea");
-                            if(textarea != null) {
-                                textarea.text(valueList.get(0));
-                                String updated = textarea.outerHtml();
-                                choices.clear();
-                                choices.put(definition.getName(), updated);
-                                return new RebuildParameterPage(definition.getClass(), definition.getDescriptor().getValuePage(), definition);
-                            }
-                        }
-                        catch (Exception e) {
-                            LOGGER.log(Level.SEVERE, "Parse Error", e);
-                            return null;
-                        }
+                        choices.put(definition.getName(), valueList.get(0));
                     }
+                    return new RebuildParameterPage(definition.getClass(), definition.getDescriptor().getValuePage(), definition);
                 }
             }
 
