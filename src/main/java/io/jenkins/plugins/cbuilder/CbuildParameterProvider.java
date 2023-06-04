@@ -4,11 +4,13 @@ import com.cwctravel.hudson.plugins.extended_choice_parameter.ExtendedChoicePara
 import com.sonyericsson.rebuild.RebuildParameterPage;
 import com.sonyericsson.rebuild.RebuildParameterProvider;
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.ChoiceParameterDefinition;
 import hudson.model.ParameterDefinition;
 import hudson.model.ParameterValue;
 import io.jenkins.plugins.changer.parameter.DownstreamPriorityDefinition;
 import jenkins.model.Jenkins;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.tools.ant.filters.StringInputStream;
 import org.biouno.unochoice.*;
 import org.biouno.unochoice.util.Utils;
@@ -75,35 +77,38 @@ public class CbuildParameterProvider extends RebuildParameterProvider {
 
 
             // getChoicesToRebuild is made to rebuild parameter, setRebulid(false) will be done at active choice parameter class or index.jelly
+
+
+            // special case for textarea in DynamicReferenceParameter
+            if (definition instanceof DynamicReferenceParameter) {
+                // for debug
+                LOGGER.log(Level.FINEST, "DynamicReferenceParameter value:" + value.getValue());
+
+                if(value.getValue() != null) {
+                    String newValue = StringEscapeUtils.escapeHtml4(value.getValue().toString()).replaceAll("\\\\n", "\n");
+                    LOGGER.log(Level.FINEST, "oldValue:" + value.getValue() + " newValue:" + newValue);
+                    DynamicReferenceParameter d2 = (DynamicReferenceParameter)definition;
+                    Map<Object, Object> choices = d2.getChoicesToRebuild();
+                    String choicesAsString = d2.getChoicesAsString();
+                    String choiceType = d2.getChoiceType();
+                    LOGGER.log(Level.FINEST, "choicesAsString:{0} choiceType:{1}", new Object[]{choicesAsString, choiceType});
+
+                    // now only dealing with ET_FORMATTED_HTML format
+                    if(choiceType.equals("ET_FORMATTED_HTML")) {
+                        LOGGER.log(Level.FINEST, "DynamicReferenceParameter choiceType ET_FORMATTED_HTML found");
+                        choices.clear();
+                        choices.put(definition.getName(), newValue);
+                        return new RebuildParameterPage(definition.getClass(), definition.getDescriptor().getValuePage(), definition);
+                    }
+                }
+
+            }
+
+            // normal choices
             Map<Object, Object> choices = ((AbstractScriptableParameter) definition).getChoicesToRebuild();
             Map<Object, Object> freshChoices = new LinkedHashMap<Object, Object>();
             Map<Object, Object> newChoices = new LinkedHashMap<Object, Object>();
 
-            // special case for textarea in DynamicReferenceParameter
-            if (definition instanceof DynamicReferenceParameter) {
-
-                // for debug
-                valueList.forEach(it -> {
-                    LOGGER.log(Level.FINEST, "DynamicReferenceParameter value:" + it);
-                });
-
-                DynamicReferenceParameter d2 = (DynamicReferenceParameter)definition;
-                String choicesAsString = d2.getChoicesAsString();
-                String choiceType = d2.getChoiceType();
-                LOGGER.log(Level.FINEST, "choicesAsString:{0} choiceType:{1}", new Object[]{choicesAsString, choiceType});
-
-                // now only dealing with ET_FORMATTED_HTML format
-                if(choiceType.equals("ET_FORMATTED_HTML")) {
-                    LOGGER.log(Level.FINEST, "DynamicReferenceParameter choiceType ET_FORMATTED_HTML found");
-                    choices.clear();
-                    if(valueList.size() > 0) {
-                        choices.put(definition.getName(), valueList.get(0));
-                    }
-                    return new RebuildParameterPage(definition.getClass(), definition.getDescriptor().getValuePage(), definition);
-                }
-            }
-
-            // normal choices
             choices.entrySet().forEach(entry -> {
                 String nk = Utils.escapeSelectedAndDisabled(entry.getKey());
                 String nv = Utils.escapeSelectedAndDisabled(entry.getValue());
