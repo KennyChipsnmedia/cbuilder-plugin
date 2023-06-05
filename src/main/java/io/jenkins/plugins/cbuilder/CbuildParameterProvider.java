@@ -37,7 +37,7 @@ public class CbuildParameterProvider extends RebuildParameterProvider {
             return null;
         }
 
-        List<String> valueList = Arrays.stream(value.getValue().toString().split(",")).collect(Collectors.toList());
+
 
         if(definition instanceof ExtendedChoiceParameterDefinition) {
 
@@ -78,8 +78,7 @@ public class CbuildParameterProvider extends RebuildParameterProvider {
 
             // getChoicesToRebuild is made to rebuild parameter, setRebulid(false) will be done at active choice parameter class or index.jelly
 
-
-            // special case for textarea in DynamicReferenceParameter
+            // DynamicReferenceParameter
             if (definition instanceof DynamicReferenceParameter) {
                 // for debug
                 LOGGER.log(Level.FINEST, "DynamicReferenceParameter value:" + value.getValue());
@@ -104,7 +103,25 @@ public class CbuildParameterProvider extends RebuildParameterProvider {
 
             }
 
-            // normal choices
+            // CascadeChoiceParameter
+            if(definition instanceof CascadeChoiceParameter) {
+                List<String> valueList = Arrays.stream(value.getValue().toString().split(",")).collect(Collectors.toList());
+                valueList.forEach(it -> {
+                    LOGGER.log(Level.FINEST, "valueList check v:" + it);
+                });
+                Map<Object, Object> choices = ((CascadeChoiceParameter) definition).getChoicesToRebuild();
+                choices.clear();
+                valueList.forEach(it -> {
+                    choices.put(it, it);
+                });
+                return new RebuildParameterPage(definition.getClass(), definition.getDescriptor().getValuePage(), definition);
+            }
+
+            // ChoiceParameter
+            List<String> valueList = Arrays.stream(value.getValue().toString().split(",")).collect(Collectors.toList());
+            valueList.forEach(it -> {
+                LOGGER.log(Level.FINEST, "valueList check2 v:" + it);
+            });
             Map<Object, Object> choices = ((AbstractScriptableParameter) definition).getChoicesToRebuild();
             Map<Object, Object> freshChoices = new LinkedHashMap<Object, Object>();
             Map<Object, Object> newChoices = new LinkedHashMap<Object, Object>();
@@ -113,25 +130,26 @@ public class CbuildParameterProvider extends RebuildParameterProvider {
                 String nk = Utils.escapeSelectedAndDisabled(entry.getKey());
                 String nv = Utils.escapeSelectedAndDisabled(entry.getValue());
                 freshChoices.put(nk, nv);
+                LOGGER.log(Level.FINEST, "put freshChoices with k:" + nk + " v:" + nv);
             });
 
             // Kenny, choices may not selected by default, but do this to refresh all choices
             freshChoices.entrySet().forEach(entry -> {
+                String k = entry.getKey().toString();
+                String v = entry.getValue().toString();
                 if(valueList.contains(entry.getKey().toString())) {
-                    String k = entry.getKey() + selected;
-                    String v = entry.getValue() + selected;
-                    newChoices.put(k, v);
+                    k = k + selected;
+                    v = v + selected;
                 }
-                else {
-                    newChoices.put(entry.getKey(), entry.getValue());
-                }
+                newChoices.put(k, v);
+                LOGGER.log(Level.FINEST, "put newChoices with k:" + k + " v:" +  v);
             });
 
             choices.clear();
             newChoices.entrySet().forEach(entry -> {
                 choices.put(entry.getKey(), entry.getValue());
+                LOGGER.log(Level.FINEST, "put choices with k:" + entry.getKey() + " v:" + entry.getValue());
             });
-
             return new RebuildParameterPage(definition.getClass(), definition.getDescriptor().getValuePage(), definition);
         }
         else if(definition instanceof DownstreamPriorityDefinition) {
