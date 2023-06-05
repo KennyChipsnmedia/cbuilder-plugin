@@ -64,7 +64,7 @@
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>extended-choice-parameter</artifactId>
             <!--<version>0.43</version>-->
-            <version>359.v35dcfdd0c20d</version>
+            <version>373.v1a_ecea_fdf2a_a_</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-text -->
         <dependency>
