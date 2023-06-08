@@ -84,7 +84,7 @@ public class CbuildParameterProvider extends RebuildParameterProvider {
                 LOGGER.log(Level.FINEST, "DynamicReferenceParameter value:" + value.getValue());
 
                 if(value.getValue() != null) {
-                    String newValue = StringEscapeUtils.escapeHtml4(value.getValue().toString()).replaceAll("\\\\n", "\n");
+                    String newValue = StringEscapeUtils.escapeHtml4(value.getValue().toString()).replaceAll("\\\\r\\\\n|\\\\n", System.lineSeparator());
                     LOGGER.log(Level.FINEST, "oldValue:" + value.getValue() + " newValue:" + newValue);
                     DynamicReferenceParameter d2 = (DynamicReferenceParameter)definition;
                     Map<Object, Object> choices = d2.getChoicesToRebuild();
